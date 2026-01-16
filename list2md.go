@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -52,6 +53,7 @@ Please update **list.txt** (via Pull Request)
 
 var (
 	deprecatedRepos = []string{"https://github.com/go-martini/martini", "https://github.com/pilu/traffic"}
+	deletedRepos    = []string{"https://github.com/micro/micro"}
 )
 
 func main() {
@@ -78,9 +80,20 @@ func main() {
 
 		fmt.Printf("Processing: %s\n", url)
 
+		// Check if repo is in deleted list
+		if isDeleted(url) {
+			log.Printf("⚠ Skipping deleted repo: %s", url)
+			continue
+		}
+
 		repo, err := fetchRepo(repoPath, accessToken)
 		if err != nil {
-			log.Printf("Failed to fetch repo %s: %v", url, err)
+			// Check if it's a 404 error and should be added to deleted list
+			if strings.Contains(err.Error(), "status 404") {
+				log.Printf("⚠ Repository not found (404): %s - Consider adding to deletedRepos if permanently deleted", url)
+			} else {
+				log.Printf("Failed to fetch repo %s: %v", url, err)
+			}
 			continue
 		}
 
@@ -260,10 +273,9 @@ func saveRanking(repos []Repo) error {
 }
 
 func isDeprecated(repoURL string) bool {
-	for _, deprecatedRepo := range deprecatedRepos {
-		if repoURL == deprecatedRepo {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(deprecatedRepos, repoURL)
+}
+
+func isDeleted(repoURL string) bool {
+	return slices.Contains(deletedRepos, repoURL)
 }
