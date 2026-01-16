@@ -44,3 +44,8 @@ https://github.com/cloudwego/kitex
 https://github.com/cloudwego/hertz
 https://github.com/encoredev/encore
 https://github.com/gofr-dev/gofr
+https://github.com/danielgtaylor/huma
+https://github.com/goravel/goravel
+https://github.com/uptrace/bunrouter
+https://github.com/livebud/bud
+https://github.com/flamego/flamego
