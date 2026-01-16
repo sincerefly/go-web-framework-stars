@@ -3,28 +3,41 @@ name: update
 on:
   schedule:
     - cron: "0 0 * * SUN"
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions UI
+  pull_request:
+    types: [closed]
+    branches:
+      - master  # Trigger when PR is merged to master branch
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Run on schedule/workflow_dispatch, or when PR is merged (not just closed)
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
       with:
         ref: "master"
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v5
       with:
-        go-version: "1.13"
+        go-version: "1.25"
     - run: |
-        echo ${{ secrets.GITHUB_TOKEN }} >> access_token.txt
+        echo ${{ secrets.GH_TOKEN }} >> access_token.txt
         go run list2md.go
     - name: update the list
       env:
-        GITHUB_USER: "mingrammer"
-        GITHUB_EMAIL: "mingrammer@gmail.com"
+        GITHUB_USER: "kissbug8720"
+        GITHUB_EMAIL: "kissbug8720@gmail.com"
       run: |
         git config user.name "${GITHUB_USER}"
         git config user.email "${GITHUB_EMAIL}"
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git
+        git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git
         git checkout master
-        git commit -am "chore: auto update"
-        git push -u origin master
+        # Only commit and push if README.md has changes
+        if git diff --quiet README.md; then
+          echo "No changes to README.md, skipping commit"
+        else
+          git add README.md
+          git commit -m "chore: auto update"
+          git push -u origin master
+        fi
